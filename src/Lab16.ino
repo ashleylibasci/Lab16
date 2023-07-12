@@ -3,8 +3,9 @@
 SYSTEM_MODE(MANUAL);
 SYSTEM_THREAD(ENABLED);
 
-#define yellowLED D2
-#define blueLED D3
+#define redLED D2
+#define greenLED D3
+#define blueLED D4
 
 OledWingAdafruit display;
 
@@ -20,9 +21,14 @@ BleCharacteristic txCharacteristic("tx", BleCharacteristicProperty::NOTIFY, txUu
 
 void setup()
 {
+  display.setup();
+  display.clearDisplay();
+  display.display();
+
   BLE.on();
 
-  pinMode(yellowLED, OUTPUT);
+  pinMode(redLED, OUTPUT);
+  pinMode(greenLED, OUTPUT);
   pinMode(blueLED, OUTPUT);
 
   BLE.addCharacteristic(txCharacteristic);
@@ -35,14 +41,11 @@ void setup()
 
   uint8_t txBuf[10];                    // an array of 10 bytes we can send
   txCharacteristic.setValue(txBuf, 10); // here we are sending all 10 bytes
-
-  display.setup();
-  display.clearDisplay();
-  display.display();
 }
 
 void loop()
 {
+
   if (BLE.connected())
   {
     analogWrite(redLED, 255);
@@ -50,9 +53,10 @@ void loop()
     analogWrite(blueLED, 0);
 
     uint8_t txBuf[UART_TX_BUF_SIZE];
-    String message = "Hello!";
+    String message = "connected";
     message.toCharArray((char *)txBuf, message.length() + 1);
     txCharacteristic.setValue(txBuf, message.length() + 1);
+    delay(2000);
   }
   else
   {
@@ -68,7 +72,7 @@ void onDataReceived(const uint8_t *data, size_t len, const BlePeerDevice &peer, 
   {
     Serial.write(data[i]);
 
-    if (data[i] == 1)
+    if (data[i] == '1')
     {
       display.loop();
       display.clearDisplay();
@@ -77,6 +81,10 @@ void onDataReceived(const uint8_t *data, size_t len, const BlePeerDevice &peer, 
       display.setCursor(0, 0);
       display.println("iPhone sent '1' ");
       display.display();
+    }
+    else if (data[i] == '0')
+    {
+      BLE.disconnect();
     }
   }
 }
